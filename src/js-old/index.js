@@ -1,20 +1,13 @@
 import Notiflix from 'notiflix';
-import NewsApiService from './js/new-service.js';
+import SearchService from './searchAPIServise';
 import LoadMoreBtn from './js/loadMoreBtn.js';
-import { refs } from './js/refs.js';
+import { refs } from './refs.js';
 
-import SimpleLightbox from 'simplelightbox';
-// import 'simplelightbox/dist/simple-lightbox.min.css';
-
-const newsApiService = new NewsApiService();
+const searchService = new SearchService();
 const loadMoreBtn = new LoadMoreBtn({
   selector: '.load-more',
   isHidden: true,
 });
-
-const listImg = document.querySelector('.gallery');
-
-listImg.style['list-style'] = 'none';
 
 loadMoreBtn.button.addEventListener('click', onLoadMore);
 refs.formEl.addEventListener('submit', onSubmit);
@@ -23,16 +16,16 @@ async function onSubmit(e) {
   e.preventDefault();
   refs.galleryEl.innerHTML = '';
   loadMoreBtn.hide();
-  newsApiService.resetPage();
-  newsApiService.query = e.currentTarget.elements.searchQuery.value.trim();
-  if (newsApiService.query === '') {
+  searchService.resetPage();
+  searchService.query = e.currentTarget.elements.searchQuery.value.trim();
+  if (searchService.query === '') {
     Notiflix.Notify.failure(
       'Sorry, there are no images matching your search query. Please try again.'
     );
     return;
   }
   try {
-    const result = await newsApiService.fetchGallery();
+    const result = await searchService.fetchGallery();
 
     if (result.hits.length === 0) {
       Notiflix.Notify.failure(
@@ -68,7 +61,7 @@ async function onSubmit(e) {
 async function onLoadMore() {
   try {
     loadMoreBtn.disable();
-    const result = await newsApiService.fetchGallery();
+    const result = await searchService.fetchGallery();
     const markup = markupGallery(result.hits);
     if (result.hits.length === 0) {
       Notiflix.Notify.info(
@@ -92,11 +85,10 @@ async function onLoadMore() {
 }
 
 function markupGallery(hits) {
-    return hits
-        .map(
-            hit => `
-          <li class="photo-card">
-          <a class="gallery__link" href="${hit.webformatURL}">
+  return hits
+    .map(
+      hit => `
+          <div class="photo-card">
             <img src="${hit.webformatURL}" alt="${hit.tags}" loading="lazy" />
             <div class="info">
               <p class="info-item">
@@ -112,9 +104,8 @@ function markupGallery(hits) {
                 <b>Downloads:</b> ${hit.downloads}
               </p>
             </div>
-            </a>
-          </li>
-        `, console.log(hits)
+          </div>
+        `
     )
     .join('');
 }
@@ -122,7 +113,3 @@ function markupGallery(hits) {
 function updateMarkup(markup) {
   refs.galleryEl.insertAdjacentHTML('beforeend', markup);
 }
-const galleryLightBox = new SimpleLightbox('.gallery__link', {
-  captionsData: 'alt',
-  captionDelay: 250,
-});

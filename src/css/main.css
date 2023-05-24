@@ -1,36 +1,3 @@
-.search-form {
-  padding-top: 10px;
-  background-color: blue;
-  height: 60px;
-  align-items: center;
-  justify-content: center;
-  border: none;
-  color: #4f5b66;
-  font-size: 10pt;
-  display: flex;
-}
-button {
-  cursor: pointer;
-  padding: 0;
-}
-[name='searchQuery'] {
-  height: 30px;
-}
-[type='submit'] {
-  height: 30px;
-  width: 30px;
-}
-.icon {
-  fill: black;
-  stroke: black;
-}
-
-.gallery {
-}
-.load-more {
-}
-
-/* 
 .gallery {
   display: flex;
   gap: 30px;
@@ -53,7 +20,7 @@ button {
   left: 0;
   width: 100%;
   display: flex;
-  gap: 1em;
+  gap: 2px;
   align-items: center;
   justify-content: center;
   background-color: #fff;
@@ -70,12 +37,13 @@ button {
 
 .photo-card img {
   width: 100%;
+  height: auto;
 }
 .info {
   display: flex;
   width: 100%;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 2px;
 }
 .info-item {
   margin: 0;
@@ -97,6 +65,7 @@ button {
 .search-form input {
   width: 300px;
   height: auto;
+  padding-left: 15px;
   font-size: 16px;
   line-height: 2em;
   outline: none;
@@ -110,17 +79,20 @@ button {
   color: #cccccc;
 }
 .search-form button {
-  width: 150px;
-  height: auto;
-  text-transform: capitalize;
-  font-size: 16px;
-  font-weight: 500;
-  line-height: 2em;
+  width: 35px;
+  height: 35px;
+  padding: 5px;
+   
   border-radius: 8px;
   cursor: pointer;
   color: black;
   background-color: rgb(157, 193, 204);
 }
+/* .icon {
+  fill: rgba(0, 0, 0, 0.5) ;
+  z-index: 100;
+  stroke: black;
+} */
 
 .load-more {
   width: 150px;
@@ -157,4 +129,4 @@ button {
   width: 1px;
   height: 1px;
   margin: -1px;
-} */
+}

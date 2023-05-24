@@ -1,5 +1,4 @@
 import axios from 'axios';
-// import SearchAPIService from './searchAPIServise.js';
 import Notiflix from 'notiflix';
 import { refs } from './refs';
 
@@ -15,13 +14,14 @@ export default class NewsApiService {
       method: 'get',
       url: 'https://pixabay.com/api/',
       params: {
-        key: '35072085-a0b1b3afc3e4ed85b172a35ba',
+        key: '36597593-1cefdef63bc4854971fb7bc7c',
         q: `${this.searchQuery}`,
         image_type: 'photo',
         orientation: 'horizontal',
         safesearch: true,
         page: `${this.page}`,
         per_page: `${this.PER_PAGE}`,
+        unsafe_inline: 'sha256-kZIsqHPSISIo2t1pH7cXKP7WqETBpurMjGw/57SZwqg=',
       },
     };
     try {
