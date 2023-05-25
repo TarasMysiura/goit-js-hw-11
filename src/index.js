@@ -93,10 +93,10 @@ async function onLoadMore() {
 
 function markupGallery(hits) {
     return hits
-        .map(
-            hit => `
+      .map(
+        hit => `
           <li class="photo-card">
-          <a class="gallery__link" href="${hit.webformatURL}">
+          <a class="gallery__link" href="${hit.largeImageURL}">
             <img src="${hit.webformatURL}" alt="${hit.tags}" loading="lazy" />
             <div class="info">
               <p class="info-item">
@@ -114,9 +114,10 @@ function markupGallery(hits) {
             </div>
             </a>
           </li>
-        `, console.log(hits)
-    )
-    .join('');
+        `,
+        console.log(hits)
+      )
+      .join('');
 }
 
 function updateMarkup(markup) {
@@ -126,3 +127,57 @@ const galleryLightBox = new SimpleLightbox('.gallery__link', {
   captionsData: 'alt',
   captionDelay: 250,
 });
+
+// function markupGallery(hits) {
+//   return galleryItems
+//     .map(({ webformatURL, tags, likes, views, comments }) => {
+//       return (
+//         `<li class="gallery__item" ;>
+//             <a class="gallery__link" href="${webformatURL}">
+//             <img class="gallery__image"
+//                 src="${webformatURL}" 
+//                 alt="${tags}" />
+//             <div class="info">
+//               <p class="info-item">
+//                 <b>Likes:</b> ${likes}
+//               </p>
+//               <p class="info-item">
+//                 <b>Views:</b> ${views}
+//               </p>
+//               <p class="info-item">
+//                 <b>Comments:</b> ${comments}
+//               </p>
+//               <p class="info-item">
+//                 <b>Downloads:</b> ${hit.downloads}
+//               </p>
+//             </div>    
+//             </a></li>`,
+//         console.log(hits)
+//       );
+//     })
+//     .join('');
+// }
+
+// listImg.insertAdjacentHTML('beforeend', createListImg(galleryItems));
+
+// // function createListImg() {
+// //   return galleryItems
+// //     .map(({ preview, original, description }) => {
+// //       return ``;
+// //     })
+// //     .join('');
+// // }
+
+// // const galleryLightBox = new SimpleLightbox('.gallery__link', {
+// //   captionsData: 'alt',
+// //   captionDelay: 250,
+// // });
+
+// function updateMarkup(markup) {
+//   refs.galleryEl.insertAdjacentHTML('beforeend', markup);
+// }
+// const galleryLightBox = new SimpleLightbox('.gallery__link', {
+//   captionsData: 'alt',
+//   captionDelay: 250,
+// });
+
