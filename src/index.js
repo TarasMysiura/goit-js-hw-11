@@ -1,183 +1,164 @@
 import Notiflix from 'notiflix';
-import NewsApiService from './js/new-service.js';
-import LoadMoreBtn from './js/loadMoreBtn.js';
-import { refs } from './js/refs.js';
-
 import SimpleLightbox from 'simplelightbox';
-// import 'simplelightbox/dist/simple-lightbox.min.css';
+import 'simplelightbox/dist/simple-lightbox.min.css';
+// import onLoadMore from './loadMore.js';
+const axios = require('axios').default;
 
-const newsApiService = new NewsApiService();
-const loadMoreBtn = new LoadMoreBtn({
-  selector: '.load-more',
-  isHidden: true,
-});
+const formRef = document.querySelector('.search-form');
+const btnLoadMore = document.querySelector('.load-more');
+const galleryRef = document.querySelector('.gallery');
+const API_KEY = '36597593-1cefdef63bc4854971fb7bc7c';
+const per_page = 20;
 
-const listImg = document.querySelector('.gallery');
+let currentPage = 1;
+let currentQuery = '';
+let lightbox;
 
-listImg.style['list-style'] = 'none';
+btnLoadMore.addEventListener('click', onLoadMore);
+formRef.addEventListener('submit', onSearch);
 
-loadMoreBtn.button.addEventListener('click', onLoadMore);
-refs.formEl.addEventListener('submit', onSubmit);
+async function onSearch(event) {
+  event.preventDefault();
+  clearGallery();
 
-async function onSubmit(e) {
-  e.preventDefault();
-  refs.galleryEl.innerHTML = '';
-  loadMoreBtn.hide();
-  newsApiService.resetPage();
-  newsApiService.query = e.currentTarget.elements.searchQuery.value.trim();
-  if (newsApiService.query === '') {
-    Notiflix.Notify.failure(
-      'Sorry, there are no images matching your search query. Please try again.'
-    );
+  const searchQuery = event.currentTarget.elements.searchQuery.value.trim();
+
+  if (searchQuery === '') {
     return;
   }
+
+  currentQuery = searchQuery;
+  console.log(currentQuery);
+
+  currentPage = 1;
   try {
-    const result = await newsApiService.fetchGallery();
-
-    if (result.hits.length === 0) {
-      Notiflix.Notify.failure(
-        'Sorry, there are no images matching your search query. Please try again.'
-      );
+    const { images, totalHits } = await fetchImages(searchQuery, currentPage);
+    if (images.length === 0) {
+      showNoResultsMessage();
       return;
-    } else {
-      const markup = markupGallery(result.hits);
-      updateMarkup(markup);
-      if (result.hits.length < result.totalHits) {
-        Notiflix.Notify.success(
-          `Hooray! We found ${result.totalHits} images !!!`
-        );
-        loadMoreBtn.show();
-      }
-      if (result.hits.length >= result.totalHits) {
-        Notiflix.Notify.success(
-          `Hooray! We found ${result.totalHits} images !!!`
-        );
-        Notiflix.Notify.info(
-          "We're sorry, but you've reached the end of search results."
-        );
-        return;
-      }
-
-      loadMoreBtn.show();
     }
+    renderImages(images);
+    console.log('totalHits', totalHits);
+
+    if (currentPage < totalHits / per_page) {
+      showLoadMoreButton();
+    }
+
+    showSearchResults(totalHits);
+    initializeLightbox();
   } catch (error) {
-    console.log(error);
+    console.error(error);
   }
+}
+
+async function fetchImages(query, page) {
+  const url = `https://pixabay.com/api/?key=${API_KEY}&q=${query}&image_type=photo&orientation=horizontal&safesearch=true&page=${page}&per_page=${per_page}`;
+
+  return await axios
+    .get(url)
+    .then(response => {
+      const { hits, totalHits } = response.data;
+      return { images: hits, totalHits };
+    })
+    .catch(error => {
+      throw new Error(`Failed to fetch images: ${error.message}`);
+    });
+}
+
+function renderImages(images) {
+  const cardsMarkup = images
+    .map(image => createImageCardMarkup(image))
+    .join('');
+  galleryRef.insertAdjacentHTML('beforeend', cardsMarkup);
+}
+
+function createImageCardMarkup(image) {
+  return `
+    <div class="photo-card">
+      <a class="photo-card-link" href="${image.largeImageURL}">
+        <img src="${image.webformatURL}" alt="${image.tags}" loading="lazy" /> 
+        <div class="info">
+          <p class="info-item">
+            <b>Likes:</b> ${image.likes}
+          </p>
+          <p class="info-item">
+            <b>Views:</b> ${image.views}
+          </p>
+          <p class="info-item">
+            <b>Comments:</b> ${image.comments}
+          </p>
+          <p class="info-item">
+            <b>Downloads:</b> ${image.downloads}
+          </p>
+        </div>
+      </a>
+    </div>
+  `;
+}
+
+function clearGallery() {
+  galleryRef.innerHTML = '';
+}
+
+function showLoadMoreButton() {
+  btnLoadMore.classList.remove('is-hidden');
+}
+
+function hideLoadMoreButton() {
+  btnLoadMore.classList.add('is-hidden');
+}
+
+function showNoResultsMessage(totalHits) {
+  hideLoadMoreButton();
+
+  Notiflix.Notify.failure(
+    'Sorry, there are no images matching your search query. Please try again.'
+  );
+}
+
+function showEndOfResultsMessage() {
+  Notiflix.Notify.info(
+    "We're sorry, but you've reached the end of search results."
+  );
+}
+
+function showSearchResults(totalHits) {
+  Notiflix.Notify.success(`Hooray! We found ${totalHits} images.`);
+}
+
+function initializeLightbox() {
+  lightbox = new SimpleLightbox('.photo-card .photo-card-link', {
+    captions: true,
+    captionsData: 'alt',
+    captionPosition: 'bottom',
+    captionDelay: 250,
+  });
 }
 
 async function onLoadMore() {
+  currentPage += 1;
+
   try {
-    loadMoreBtn.disable();
-    const result = await newsApiService.fetchGallery();
-    const markup = markupGallery(result.hits);
-    if (result.hits.length === 0) {
-      Notiflix.Notify.info(
-        "We're sorry, but you've reached the end of search results."
-      );
-      loadMoreBtn.hide();
+    const { images, totalHits } = await fetchImages(currentQuery, currentPage);
+    if (images.length === 0) {
+      hideLoadMoreButton();
+      showEndOfResultsMessage();
       return;
     }
-    updateMarkup(markup);
-    loadMoreBtn.enable();
-    if (result.hits.length < 40 || result.hits.length >= result.totalHits) {
-      Notiflix.Notify.info(
-        "We're sorry, but you've reached the end of search results."
-      );
-      loadMoreBtn.hide();
-      return;
+    console.log(totalHits);
+
+    renderImages(images);
+    initializeLightbox();
+
+    const { images: nextImages } = await fetchImages(
+      currentQuery,
+      currentPage + 1
+    );
+
+    if (nextImages.length === 0) {
+      hideLoadMoreButton();
     }
-  } catch (error) {
-    console.log(error);
-  }
+
+    lightbox.refresh();
+  } catch (error) {}
 }
-
-function markupGallery(hits) {
-    return hits
-      .map(
-        hit => `
-          <li class="photo-card">
-          <a class="gallery__link" href="${hit.largeImageURL}">
-            <img src="${hit.webformatURL}" alt="${hit.tags}" loading="lazy" />
-            <div class="info">
-              <p class="info-item">
-                <b>Likes:</b> ${hit.likes}
-              </p>
-              <p class="info-item">
-                <b>Views:</b> ${hit.views}
-              </p>
-              <p class="info-item">
-                <b>Comments:</b> ${hit.comments}
-              </p>
-              <p class="info-item">
-                <b>Downloads:</b> ${hit.downloads}
-              </p>
-            </div>
-            </a>
-          </li>
-        `,
-        console.log(hits)
-      )
-      .join('');
-}
-
-function updateMarkup(markup) {
-  refs.galleryEl.insertAdjacentHTML('beforeend', markup);
-}
-const galleryLightBox = new SimpleLightbox('.gallery__link', {
-  captionsData: 'alt',
-  captionDelay: 250,
-});
-
-// function markupGallery(hits) {
-//   return galleryItems
-//     .map(({ webformatURL, tags, likes, views, comments }) => {
-//       return (
-//         `<li class="gallery__item" ;>
-//             <a class="gallery__link" href="${webformatURL}">
-//             <img class="gallery__image"
-//                 src="${webformatURL}" 
-//                 alt="${tags}" />
-//             <div class="info">
-//               <p class="info-item">
-//                 <b>Likes:</b> ${likes}
-//               </p>
-//               <p class="info-item">
-//                 <b>Views:</b> ${views}
-//               </p>
-//               <p class="info-item">
-//                 <b>Comments:</b> ${comments}
-//               </p>
-//               <p class="info-item">
-//                 <b>Downloads:</b> ${hit.downloads}
-//               </p>
-//             </div>    
-//             </a></li>`,
-//         console.log(hits)
-//       );
-//     })
-//     .join('');
-// }
-
-// listImg.insertAdjacentHTML('beforeend', createListImg(galleryItems));
-
-// // function createListImg() {
-// //   return galleryItems
-// //     .map(({ preview, original, description }) => {
-// //       return ``;
-// //     })
-// //     .join('');
-// // }
-
-// // const galleryLightBox = new SimpleLightbox('.gallery__link', {
-// //   captionsData: 'alt',
-// //   captionDelay: 250,
-// // });
-
-// function updateMarkup(markup) {
-//   refs.galleryEl.insertAdjacentHTML('beforeend', markup);
-// }
-// const galleryLightBox = new SimpleLightbox('.gallery__link', {
-//   captionsData: 'alt',
-//   captionDelay: 250,
-// });
-
