@@ -1,8 +1,8 @@
 import Notiflix from 'notiflix';
 import SimpleLightbox from 'simplelightbox';
 import 'simplelightbox/dist/simple-lightbox.min.css';
-// import onLoadMore from './loadMore.js';
 const axios = require('axios').default;
+const DEBOUNCE_DELAY = 500;
 
 const formRef = document.querySelector('.search-form');
 const btnLoadMore = document.querySelector('.load-more');
@@ -26,6 +26,7 @@ async function onSearch(event) {
   if (searchQuery === '') {
     return;
   }
+  
 
   currentQuery = searchQuery;
   console.log(currentQuery);
@@ -162,3 +163,13 @@ async function onLoadMore() {
     lightbox.refresh();
   } catch (error) {}
 }
+
+function handleScroll() {
+  const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
+
+  if (scrollTop + clientHeight >= scrollHeight - 1) {
+    fetchImages();
+  }
+};
+
+window.addEventListener('scroll', handleScroll);
