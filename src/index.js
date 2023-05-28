@@ -2,20 +2,26 @@ import Notiflix from 'notiflix';
 import SimpleLightbox from 'simplelightbox';
 import 'simplelightbox/dist/simple-lightbox.min.css';
 const axios = require('axios').default;
-const DEBOUNCE_DELAY = 500;
+// const DEBOUNCE_DELAY = 500;
 
 const formRef = document.querySelector('.search-form');
 const btnLoadMore = document.querySelector('.load-more');
 const galleryRef = document.querySelector('.gallery');
 const API_KEY = '36597593-1cefdef63bc4854971fb7bc7c';
-const per_page = 20;
+const per_page = 40;
 
 let currentPage = 1;
 let currentQuery = '';
-let lightbox;
 
 btnLoadMore.addEventListener('click', onLoadMore);
 formRef.addEventListener('submit', onSearch);
+
+const lightbox = new SimpleLightbox('.photo-card .photo-card-link', {
+  captions: true,
+  captionsData: 'alt',
+  captionPosition: 'bottom',
+  captionDelay: 250,
+});
 
 async function onSearch(event) {
   event.preventDefault();
@@ -26,70 +32,68 @@ async function onSearch(event) {
   if (searchQuery === '') {
     return;
   }
-  
 
   currentQuery = searchQuery;
   console.log(currentQuery);
 
   currentPage = 1;
   try {
-    const { images, totalHits } = await fetchImages(searchQuery, currentPage);
-    if (images.length === 0) {
+    const {hits, totalHits}  = await fetchImages(searchQuery, currentPage);
+    
+    console.log(hits);
+    
+    if (hits.length === 0) {
       showNoResultsMessage();
       return;
     }
-    renderImages(images);
+    renderImages(hits);
+    lightbox.refresh();
     console.log('totalHits', totalHits);
 
-    if (currentPage < totalHits / per_page) {
+    if (currentPage >= totalHits / per_page) {
+      hideLoadMoreButton();
+    } else {
       showLoadMoreButton();
     }
 
     showSearchResults(totalHits);
-    initializeLightbox();
   } catch (error) {
     console.error(error);
   }
 }
 
 async function fetchImages(query, page) {
-  const url = `https://pixabay.com/api/?key=${API_KEY}&q=${query}&image_type=photo&orientation=horizontal&safesearch=true&page=${page}&per_page=${per_page}`;
+  const { data } = await axios.get(
+    `https://pixabay.com/api/?key=${API_KEY}&q=${query}&image_type=photo&orientation=horizontal&safesearch=true&page=${page}&per_page=${per_page}`
+  );
 
-  return await axios
-    .get(url)
-    .then(response => {
-      const { hits, totalHits } = response.data;
-      return { images: hits, totalHits };
-    })
-    .catch(error => {
-      throw new Error(`Failed to fetch images: ${error.message}`);
-    });
+  return data
 }
 
-function renderImages(images) {
-  const cardsMarkup = images
-    .map(image => createImageCardMarkup(image))
+function renderImages(hits) {
+  const cardsMarkup = hits
+    .map(hit => createImageCardMarkup(hit))
     .join('');
   galleryRef.insertAdjacentHTML('beforeend', cardsMarkup);
 }
 
-function createImageCardMarkup(image) {
+function createImageCardMarkup(hit) {
   return `
     <div class="photo-card">
-      <a class="photo-card-link" href="${image.largeImageURL}">
-        <img src="${image.webformatURL}" alt="${image.tags}" loading="lazy" /> 
+      <a class="photo-card-link" href="${hit.largeImageURL}">
+        <img src="${hit.webformatURL}" alt="${hit.tags}" loading="lazy" /> 
         <div class="info">
           <p class="info-item">
-            <b>Likes:</b> ${image.likes}
+            <b>Likes:</b> ${hit.likes}
           </p>
           <p class="info-item">
-            <b>Views:</b> ${image.views}
+            <b>Views:</b> ${hit.views}
           </p>
           <p class="info-item">
-            <b>Comments:</b> ${image.comments}
+            <b>Comments:</b> ${hit.comments}
           </p>
           <p class="info-item">
-            <b>Downloads:</b> ${image.downloads}
+            <b>Downloads:</b> ${hit.downloads}
           </p>
         </div>
       </a>
@@ -127,49 +131,23 @@ function showSearchResults(totalHits) {
   Notiflix.Notify.success(`Hooray! We found ${totalHits} images.`);
 }
 
-function initializeLightbox() {
-  lightbox = new SimpleLightbox('.photo-card .photo-card-link', {
-    captions: true,
-    captionsData: 'alt',
-    captionPosition: 'bottom',
-    captionDelay: 250,
-  });
-}
-
 async function onLoadMore() {
   currentPage += 1;
 
   try {
-    const { images, totalHits } = await fetchImages(currentQuery, currentPage);
-    if (images.length === 0) {
+    const { hits, totalHits } = await fetchImages(currentQuery, currentPage);
+    if (hits.length === 0) {
       hideLoadMoreButton();
       showEndOfResultsMessage();
       return;
     }
     console.log(totalHits);
 
-    renderImages(images);
-    initializeLightbox();
-
-    const { images: nextImages } = await fetchImages(
-      currentQuery,
-      currentPage + 1
-    );
-
-    if (nextImages.length === 0) {
+    renderImages(hits);
+    lightbox.refresh();
+    if (currentPage >= totalHits / per_page) {
       hideLoadMoreButton();
     }
-
-    lightbox.refresh();
+    
   } catch (error) {}
 }
-
-function handleScroll() {
-  const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
-
-  if (scrollTop + clientHeight >= scrollHeight - 1) {
-    fetchImages();
-  }
-};
-
-window.addEventListener('scroll', handleScroll);
