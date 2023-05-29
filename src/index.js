@@ -25,6 +25,7 @@ const lightbox = new SimpleLightbox('.photo-card .photo-card-link', {
 
 async function onSearch(event) {
   event.preventDefault();
+  hideLoadMoreButton();
   clearGallery();
 
   const searchQuery = event.currentTarget.elements.searchQuery.value.trim();
@@ -38,11 +39,13 @@ async function onSearch(event) {
 
   currentPage = 1;
   try {
-    const {hits, totalHits}  = await fetchImages(searchQuery, currentPage);
-    
+    const { hits, totalHits } = await fetchImages(searchQuery, currentPage);
+
     console.log(hits);
-    
+
     if (hits.length === 0) {
+      // hideLoadMoreButton();
+      clearGallery();
       showNoResultsMessage();
       return;
     }
@@ -51,6 +54,7 @@ async function onSearch(event) {
     console.log('totalHits', totalHits);
 
     if (currentPage >= totalHits / per_page) {
+      showEndOfResultsMessage();
       hideLoadMoreButton();
     } else {
       showLoadMoreButton();
@@ -67,13 +71,11 @@ async function fetchImages(query, page) {
     `https://pixabay.com/api/?key=${API_KEY}&q=${query}&image_type=photo&orientation=horizontal&safesearch=true&page=${page}&per_page=${per_page}`
   );
 
-  return data
+  return data;
 }
 
 function renderImages(hits) {
-  const cardsMarkup = hits
-    .map(hit => createImageCardMarkup(hit))
-    .join('');
+  const cardsMarkup = hits.map(hit => createImageCardMarkup(hit)).join('');
   galleryRef.insertAdjacentHTML('beforeend', cardsMarkup);
 }
 
@@ -114,8 +116,6 @@ function hideLoadMoreButton() {
 }
 
 function showNoResultsMessage(totalHits) {
-  hideLoadMoreButton();
-
   Notiflix.Notify.failure(
     'Sorry, there are no images matching your search query. Please try again.'
   );
@@ -138,7 +138,7 @@ async function onLoadMore() {
     const { hits, totalHits } = await fetchImages(currentQuery, currentPage);
     if (hits.length === 0) {
       hideLoadMoreButton();
-      showEndOfResultsMessage();
+      
       return;
     }
     console.log(totalHits);
@@ -147,7 +147,7 @@ async function onLoadMore() {
     lightbox.refresh();
     if (currentPage >= totalHits / per_page) {
       hideLoadMoreButton();
+      showEndOfResultsMessage();
     }
-    
   } catch (error) {}
 }
